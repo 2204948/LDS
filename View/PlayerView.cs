@@ -3,7 +3,7 @@ using UnityEngine;
 public class PlayerView : MonoBehaviour
 {
 
-    // Move o jogador de acordo com a direção e velocidade recebidas
+    // Move o jogador de acordo com a direcao e velocidade recebidas
     public void Move(Vector2 direction, float speed)
     {
         // Aplicacao do movimento
@@ -11,7 +11,7 @@ public class PlayerView : MonoBehaviour
         transform.position += movement; 
     }
 
-    // Define diretamente a posição do jogador 
+    // Define diretamente a posicao do jogador 
     public void SetPosition(Vector3 newPosition)
     {
         transform.position = newPosition;
