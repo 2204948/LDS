@@ -1,19 +1,31 @@
+// # Responsavel por representar o jogador visualmente, capta input e reage ao Model
 using UnityEngine;
 
 public class PlayerView : MonoBehaviour
 {
+    private PlayerController controller;
 
-    // Move o jogador de acordo com a direcao e velocidade recebidas
-    public void Move(Vector2 direction, float speed)
+    // Liga a View ao Controller
+    public void SetController(PlayerController controller)
     {
-        // Aplicacao do movimento
-        Vector3 movement = new Vector3(direction.x, 0f, 0f) * speed * Time.deltaTime;
-        transform.position += movement; 
+        this.controller = controller;
     }
 
-    // Define diretamente a posicao do jogador 
-    public void SetPosition(Vector3 newPosition)
+    // Liga a View ao Model (para escutar eventos)
+    public void Subscribe(PlayerModel model)
+    {
+        model.OnPositionChanged += UpdateVisual;
+    }
+
+    private void UpdateVisual(Vector3 newPosition)
     {
         transform.position = newPosition;
+    }
+
+    // Capta o input do jogador e envia ao Controller
+    private void Update()
+    {
+        float input = Input.GetAxisRaw("Horizontal");
+        controller?.HandleInput(input, Time.deltaTime);
     }
 }
