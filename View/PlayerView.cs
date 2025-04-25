@@ -25,7 +25,9 @@ public class PlayerView : MonoBehaviour
     // Capta o input do jogador e envia ao Controller
     private void Update()
     {
-        float input = Input.GetAxisRaw("Horizontal");
-        controller?.HandleInput(input, Time.deltaTime);
+        float inputMov = Input.GetAxisRaw("Horizontal");
+        if (inputMov != 0f)
+            controller?.playerMove(inputMov, Time.deltaTime);
+        
     }
 }
