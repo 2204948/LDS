@@ -7,7 +7,7 @@ public class PlayerModel
 {   
     public event Action<Vector3> OnPositionChanged;
 
-    private Vector3 position;  // não pode ser Vector2 vendo que estamos a usar apenas 2D?
+    private Vector3 position;
     public const float movSpeed = 8.0f;
     private readonly float maxLeft = -14f; 
     private readonly float maxRight = 14f; 
