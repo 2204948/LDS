@@ -4,16 +4,17 @@ using System.Collections.Generic;
 public class GameView : MonoBehaviour
 {
     private GameController controller;
+    private GameModel model;
 
     // Referências definidas no Inspector
-    public GameObject player;
-    public GameObject bulletPrefab;
-    public GameObject enemyPrefab;
-    public GameObject explosionPrefab;
+    [SerializeField] private GameObject player;
+    [SerializeField] private GameObject bulletPrefab;
+    [SerializeField] private GameObject enemyPrefab;
+    [SerializeField] private GameObject explosionPrefab;
 
-    public GameObject mainMenuPanel;
-    public GameObject gameOverPanel;
-    public TMPro.TextMeshProUGUI scoreText;
+    [SerializeField] private GameObject mainMenuPanel;
+    [SerializeField] private GameObject gameOverPanel;
+    [SerializeField] private TMPro.TextMeshProUGUI scoreText;
 
     // Mapas de posições para instâncias
     private Dictionary<Vector3, GameObject> bullets = new();
@@ -22,20 +23,26 @@ public class GameView : MonoBehaviour
     void Start()
     {
         controller = new GameController(this);
+        model = new GameModel();
+        model.OnPositionChanged += UpdatePlayerPosition;
+        model.BulletFired += SpawnBullet;
+        model.BulletMoved += MoveBullet;
+        model.BulletDestroyed += DestroyBullet;
+        model.OnEnemySpawn += SpawnEnemy;
+        model.OnEnemyKilled += ShowExplosion;
+        model.OnGameOver += ShowGameOver;
+        model.OnScoreChanged += UpdateScore;
         ShowMainMenu();
     }
 
-    void Update()
-    {
-        HandleUserInput();
-        controller.Update();
-    }
-
-    private void HandleUserInput()
+    private void Update()
     {
         float horizontal = Input.GetAxisRaw("Horizontal");
+        if(horizontal != 0)
+            controller.OnPlayerInput(horizontal, Time.deltaTime);
         bool shoot = Input.GetKeyDown(KeyCode.Space);
-        controller.OnPlayerInput(horizontal, shoot);
+        if(shoot)
+            controller.Shoot(shoot, Time.deltaTime);
     }
 
     public void ShowMainMenu()
@@ -48,17 +55,24 @@ public class GameView : MonoBehaviour
     public void StartGame()
     {
         mainMenuPanel?.SetActive(false);
+        gameOverPanel?.SetActive(false);
         player?.SetActive(true);
-        UpdateScore(0);
     }
 
-    public void UpdatePlayerPosition(Vector3 pos)
+    public void ShowGameOver()
+    {
+        gameOverPanel?.SetActive(true);
+    }
+
+    //  Métodos de atualização dos objetos
+
+    private void UpdatePlayerPosition(Vector3 pos)
     {
         if (player != null)
             player.transform.position = pos;
     }
 
-    public void SpawnBullet(Vector3 pos)
+    private void SpawnBullet(Vector3 pos)
     {
         var b = Instantiate(bulletPrefab, pos, Quaternion.identity);
         bullets[pos] = b;
@@ -67,7 +81,7 @@ public class GameView : MonoBehaviour
     public void MoveBullet(Vector3 newPos)
     {
         // encontra a entrada cujo key é a posição anterior mais próxima
-        foreach (var kv in new Dictionary<Vector3,GameObject>(bullets))
+        foreach (var kv in new Dictionary<Vector3, GameObject>(bullets))
         {
             if (kv.Key.x == newPos.x && Mathf.Approximately(kv.Key.y + Time.deltaTime * GameModel.bulletSpeed, newPos.y))
             {
@@ -114,11 +128,6 @@ public class GameView : MonoBehaviour
     {
         if (scoreText != null)
             scoreText.text = $"Score: {score}";
-    }
-
-    public void ShowGameOver()
-    {
-        gameOverPanel?.SetActive(true);
     }
 
     // Exemplo de feedback visual ao dano (opcional)
