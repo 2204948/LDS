@@ -8,14 +8,11 @@ public class GameController
     private float lastShotTime = -1f;
     private const float bulletCooldown = 0.5f;
 
-    public GameController(GameView view)
+    public GameController(GameView view, GameModel model)
     {
         this.view = view;
-        this.model = new GameModel();
-
-
-        // Inicializar o jogo
-        model.StartNewGame();
+        this.model = model;
+        view.ShowMainMenu();
     }
 
     public void OnPlayerInput(float direction, bool shoot)
@@ -39,14 +36,19 @@ public class GameController
         model.EnemyHit(enemyPosition);
     }
 
-    public void SpawnEnemy(Vector2 position)
+    public void StartGame()
     {
-        model.EnemySpawn(position);
+        model.StartNewGame();
     }
 
     public void RestartGame()
     {
         model.StartNewGame()
         view.StartGame();
+    }
+
+    public void ShowMenu()
+    {
+        view.ShowMainMenu();
     }
 }
