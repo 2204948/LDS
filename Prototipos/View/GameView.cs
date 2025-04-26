@@ -22,7 +22,6 @@ public class GameView : MonoBehaviour
 
     void Start()
     {
-        controller = new GameController(this);
         model = new GameModel();
         model.OnPositionChanged += UpdatePlayerPosition;
         model.BulletFired += SpawnBullet;
@@ -32,7 +31,7 @@ public class GameView : MonoBehaviour
         model.OnEnemyKilled += ShowExplosion;
         model.OnGameOver += ShowGameOver;
         model.OnScoreChanged += UpdateScore;
-        ShowMainMenu();
+        controller = new GameController(this, model);
     }
 
     private void Update()
@@ -62,6 +61,21 @@ public class GameView : MonoBehaviour
     public void ShowGameOver()
     {
         gameOverPanel?.SetActive(true);
+    }
+
+    public void OnMainMenuStartButton()
+    {
+        controller.StartGame();
+    }
+
+    public void OnGameOverStartButton()
+    {
+        controller.StartGame();
+    }
+
+    public void OnGameOverQuitButton()
+    {
+        controller.ShowMenu();
     }
 
     //  Métodos de atualização dos objetos
