@@ -36,12 +36,15 @@ public class GameView : MonoBehaviour
 
     private void Update()
     {
+        if (controller == null)
+            return;
+        
         float horizontal = Input.GetAxisRaw("Horizontal");
         if(horizontal != 0)
             controller.OnPlayerInput(horizontal, Time.deltaTime);
         bool shoot = Input.GetKeyDown(KeyCode.Space);
         if(shoot)
-            controller.Shoot(shoot, Time.deltaTime);
+            controller.Shoot(shoot);
     }
 
     public void ShowMainMenu()
@@ -53,9 +56,9 @@ public class GameView : MonoBehaviour
 
     public void StartGame()
     {
-        mainMenuPanel?.SetActive(false);
-        gameOverPanel?.SetActive(false);
-        player?.SetActive(true);
+        //mainMenuPanel?.SetActive(false);
+        //gameOverPanel?.SetActive(false);
+        //player?.SetActive(true);
     }
 
     public void ShowGameOver()
