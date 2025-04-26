@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System;
 using System.Collections.Generic;
 
@@ -15,6 +15,7 @@ public class GameModel
     public event Action<Vector3> BulletDestroyed;
     public event Action<Vector2> OnEnemySpawn;
     public event Action<Vector2> OnEnemyKilled;
+    public event Action<int> OnScoreChanged;
     public event Action OnGameOver;
 
     // Estado do jogador
@@ -30,6 +31,7 @@ public class GameModel
     private readonly float maxLeft = -14f;
     private readonly float maxRight = 14f;
     private readonly float bulletMaxY = 20f;
+    private int score;
 
     private int score = 0;
 
@@ -41,6 +43,7 @@ public class GameModel
         enemies.Clear();
         score = 0;
         playerPosition = new Vector3(0f, -14f, 0f);
+        OnScoreChanged?.Invoke(score);
         OnPositionChanged?.Invoke(playerPosition);
     }
 
@@ -92,6 +95,8 @@ public class GameModel
     {
         if (enemies.Remove(position))
         {
+            score += 10;
+            OnScoreChanged?.Invoke(score);
             OnEnemyKilled?.Invoke(position);
         }
 
