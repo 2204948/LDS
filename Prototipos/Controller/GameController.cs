@@ -12,18 +12,18 @@ public class GameController
     {
         this.view = view;
         this.model = model;
-        view.ShowMainMenu();
+        view.StartGame();// view.ShowMainMenu()
+        model.StartNewGame(); // a remover utilizado para testar se jogo funciona
     }
 
-    public void OnPlayerInput(float direction, bool shoot)
+    public void OnPlayerInput(float direction, float deltaTime)
     {
-        model.Move(direction, Time.deltaTime);
+        model.Move(direction, deltaTime);
+    }
 
-        if (shoot && Time.time - lastShotTime >= bulletCooldown)
-        {
-            lastShotTime = Time.time;
-            model.TryShot();
-        }
+    public void Shoot(bool shoot)
+    {
+        model.TryShot();
     }
 
     public void Update()
@@ -43,7 +43,7 @@ public class GameController
 
     public void RestartGame()
     {
-        model.StartNewGame()
+        model.StartNewGame();
         view.StartGame();
     }
 
