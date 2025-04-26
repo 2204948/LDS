@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 public class GameController
 {
@@ -13,18 +13,9 @@ public class GameController
         this.view = view;
         this.model = new GameModel();
 
-        // Ligar eventos do Model à View
-        model.OnPositionChanged += view.UpdatePlayerPosition;
-        model.BulletFired += view.SpawnBullet;
-        model.BulletMoved += view.MoveBullet;
-        model.BulletDestroyed += view.DestroyBullet;
-        model.OnEnemySpawn += view.SpawnEnemy;
-        model.OnEnemyKilled += view.ShowExplosion;
-        model.OnGameOver += view.ShowGameOver;
 
         // Inicializar o jogo
         model.StartNewGame();
-        view.UpdateScore(0);
     }
 
     public void OnPlayerInput(float direction, bool shoot)
@@ -55,8 +46,7 @@ public class GameController
 
     public void RestartGame()
     {
-        model.StartNewGame();
-        view.UpdateScore(0);
+        model.StartNewGame()
         view.StartGame();
     }
 }
