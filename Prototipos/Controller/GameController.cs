@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class GameController
 {
@@ -13,7 +13,7 @@ public class GameController
         this.view = view;
         this.model = model;
         view.StartGame();// view.ShowMainMenu()
-        model.StartNewGame(); // a remover utilizado para testar se jogo funciona
+        model.StartNewGame();
     }
 
     public void OnPlayerInput(float direction, float deltaTime)
@@ -50,5 +50,10 @@ public class GameController
     public void ShowMenu()
     {
         view.ShowMainMenu();
+    }
+
+    public void OnUpdate(float deltatime)
+    {
+        model.OnUpdate(deltaTime);
     }
 }

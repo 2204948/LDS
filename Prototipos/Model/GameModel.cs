@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System;
 using System.Collections.Generic;
 
@@ -74,6 +74,11 @@ public class GameModel
         }
         OnScoreChanged?.Invoke(score);
         OnPositionChanged?.Invoke(playerPosition);
+    }
+
+    public void OnUpdate(float deltaTime)
+    {
+        //atualizar movimento das naves inimigas e dos tiros ativos
     }
 
     public void SetInitialPosition(Vector3 initialPosition)

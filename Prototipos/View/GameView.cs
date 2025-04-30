@@ -1,5 +1,7 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
+using System;
+using Unity.VisualScripting;
 
 public class GameView : MonoBehaviour
 {
@@ -31,14 +33,37 @@ public class GameView : MonoBehaviour
         model.OnEnemyKilled += ShowExplosion;
         model.OnGameOver += ShowGameOver;
         model.OnScoreChanged += UpdateScore;
+        //OnMove + = HandleMove;
         controller = new GameController(this, model);
     }
+
+
+    /*public event Action<float> OnMove;
 
     private void Update()
     {
         if (controller == null)
             return;
-        
+
+        controller.OnUpdate(Time.deltaTime);
+        float horizontal = Input.GetAxisRaw("Horizontal");
+        if (horizontal != 0)
+            OnMove?.Invoke(horizontal);
+    }
+
+    private void HandleMove(float horizontal)
+    {
+        controller.OnPlayerInput(horizontal, Time.deltaTime);
+    }*/
+
+
+
+    private void Update()
+    {
+        if (controller == null)
+            return;
+
+        controller.OnUpdate(Time.deltaTime);
         float horizontal = Input.GetAxisRaw("Horizontal");
         if(horizontal != 0)
             controller.OnPlayerInput(horizontal, Time.deltaTime);
