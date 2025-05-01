@@ -52,7 +52,7 @@ public class GameController
         view.ShowMainMenu();
     }
 
-    public void OnUpdate(float deltatime)
+    public void OnUpdate(float deltaTime)
     {
         model.OnUpdate(deltaTime);
     }
