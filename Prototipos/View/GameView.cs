@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections.Generic;
 using System;
 using Unity.VisualScripting;
@@ -30,7 +30,8 @@ public class GameView : MonoBehaviour
         model.BulletMoved += MoveBullet;
         model.BulletDestroyed += DestroyBullet;
         model.OnEnemySpawn += SpawnEnemy;
-        model.OnEnemyKilled += ShowExplosion;
+        model.EnemyMoved += MoveEnemy;
+        model.OnEnemyKilled += HandleEnemyKilled;
         model.OnGameOver += ShowGameOver;
         model.OnScoreChanged += UpdateScore;
         //OnMove + = HandleMove;
@@ -63,13 +64,19 @@ public class GameView : MonoBehaviour
         if (controller == null)
             return;
 
-        controller.OnUpdate(Time.deltaTime);
+        controller.OnUpdate(Time.deltaTime); // update de todos os objetos
+
+
         float horizontal = Input.GetAxisRaw("Horizontal");
         if(horizontal != 0)
             controller.OnPlayerInput(horizontal, Time.deltaTime);
+
+        // Tiro: (Toma)
         bool shoot = Input.GetKeyDown(KeyCode.Space);
         if(shoot)
             controller.Shoot(shoot);
+
+            
     }
 
     public void ShowMainMenu()
@@ -138,10 +145,15 @@ public class GameView : MonoBehaviour
 
     public void DestroyBullet(Vector3 pos)
     {
-        if (bullets.TryGetValue(pos, out var b))
+        const float tol = 0.05f;               // tolerância p/ float
+        foreach (var kv in new Dictionary<Vector3, GameObject>(bullets))
         {
-            Destroy(b);
-            bullets.Remove(pos);
+            if (Vector3.Distance(kv.Key, pos) < tol)
+            {
+                Destroy(kv.Value);             // mata o GO da bala
+                bullets.Remove(kv.Key);        // tira do dicionário
+                break;
+            }
         }
     }
 
@@ -151,19 +163,65 @@ public class GameView : MonoBehaviour
         enemies[pos] = e;
     }
 
+    public void MoveEnemy(Vector3 newPos, bool moveRight)
+    {
+        // Procura a instância cuja posição bate com o novo movimento,
+        // seja deslocamento horizontal normal ou “drop” vertical.
+        foreach (var kv in new Dictionary<Vector3, GameObject>(enemies))
+        {
+            Vector3 oldPos = kv.Key;
+            float horizontalStep = Time.deltaTime * GameModel.enemySpeed;
+
+            // 1) Movimento horizontal ─ X muda ±horizontalStep, Y mantém‑se
+            bool horizontalMatch =
+                Mathf.Approximately(oldPos.y, newPos.y) &&
+                (
+                    (moveRight  && Mathf.Approximately(oldPos.x + horizontalStep, newPos.x)) ||
+                    (!moveRight && Mathf.Approximately(oldPos.x - horizontalStep, newPos.x))
+                );
+
+            // 2) Drop vertical ─ Y desce 1 unidade, X mantém‑se
+            bool verticalMatch =
+                Mathf.Approximately(oldPos.x, newPos.x) &&
+                Mathf.Approximately(oldPos.y - 1f, newPos.y);
+
+            if (horizontalMatch || verticalMatch)
+            {
+                GameObject go = kv.Value;
+                enemies.Remove(oldPos);      // remove chave antiga
+                go.transform.position = newPos;
+                enemies[newPos] = go;        // adiciona nova chave
+                break;
+            }
+        }
+    }
+
     public void ShowExplosion(Vector3 pos)
     {
         var ex = Instantiate(explosionPrefab, pos, Quaternion.identity);
-        Destroy(ex, 1f);
+        Destroy(ex, .1f); // .1 para ser apenas um flash
     }
+
 
     public void DestroyEnemy(Vector3 pos)
     {
-        if (enemies.TryGetValue(pos, out var e))
+        // pequena tolerância, para evitar falhas por arredondamento de floats
+        const float tol = 0.05f;
+
+        // percorre uma cópia para evitar modificação durante iteração
+        foreach (var kv in new Dictionary<Vector3, GameObject>(enemies))
         {
-            Destroy(e);
-            enemies.Remove(pos);
+            if (Vector3.Distance(kv.Key, pos) < tol)
+            {
+                Destroy(kv.Value);      // destrói o GameObject
+                enemies.Remove(kv.Key); // remove a entrada do dicionário
+                break;
+            }
         }
+    }
+    public void HandleEnemyKilled(Vector3 pos){
+        ShowExplosion(pos);
+        DestroyEnemy(pos);
     }
 
     public void UpdateScore(int score)
