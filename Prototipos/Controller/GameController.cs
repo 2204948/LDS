@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 public class GameController
 {
@@ -21,15 +21,17 @@ public class GameController
         model.Move(direction, deltaTime);
     }
 
+
+    //Tiro:
     public void Shoot(bool shoot)
     {
         model.TryShot();
     }
 
-    public void Update()
-    {
-        model.Update(Time.deltaTime);
-    }
+    // public void Update()
+    // {
+    //     model.Update(Time.deltaTime);
+    // }
 
     public void OnEnemyKilled(Vector2 enemyPosition)
     {
