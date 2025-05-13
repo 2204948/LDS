@@ -1,13 +1,13 @@
-using System;
+using System.Collections.Generic;
 
 // Definições dos delegates usados para eventos do modelo
 public delegate void PositionChangedHandler(Coord newPosition);
 public delegate void BulletFiredHandler(Coord bulletPosition);
-public delegate void BulletMovedHandler(Coord newBulletPosition);
-public delegate void BulletDestroyedHandler(Coord bulletPosition);
-public delegate void EnemySpawnHandler(Coord enemyPosition);
-public delegate void EnemyMovHandler(Coord newEnemyPosition, bool moveDir);
-public delegate void EnemyKilledHandler(Coord enemyPosition);
+public delegate void BulletMovedHandler(List<Coord> newBulletPosition);
+public delegate void BulletDestroyedHandler(int bullet);
+public delegate void EnemySpawnHandler(List<Coord> enemyPosition);
+public delegate void EnemyMovHandler(List<Coord> newEnemyPosition);
+public delegate void EnemyKilledHandler(int enemy);
 public delegate void ScoreChangedHandler(int newScore);
 public delegate void GameOverHandler();
 
