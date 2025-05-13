@@ -12,7 +12,7 @@ public class GameView : MonoBehaviour, IGameView
     [SerializeField] private GameObject bulletPrefab;
     [SerializeField] private GameObject enemyPrefab;
     [SerializeField] private GameObject explosionPrefab;
-
+    [SerializeField] private GameObject enemyBulletPrefab;
     [SerializeField] private GameObject mainMenuPanel;
     [SerializeField] private GameObject gameOverPanel;
     [SerializeField] private TMPro.TextMeshProUGUI scoreText;
