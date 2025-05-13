@@ -1,5 +1,3 @@
-using System;
-
 public delegate void OnMoveHandler(float horizontal, float deltaTime);
 public delegate void OnShootHandler();
 public delegate void OnMainMenuStartHandler();
@@ -21,5 +19,5 @@ public interface IGameView
     void ShowGameOver();
     void UpdateScore(int score);
     void FlashPlayerDamage();
-    void HandleEnemyKilled(Coord pos);
+    void HandleEnemyKilled(int enemy);
 }
