@@ -1,6 +1,5 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections.Generic;
-using System.Xml.Serialization;
 
 
 public class GameView : MonoBehaviour, IGameView
@@ -19,8 +18,8 @@ public class GameView : MonoBehaviour, IGameView
     [SerializeField] private TMPro.TextMeshProUGUI scoreText;
 
     // Mapas de posições para instâncias
-    private Dictionary<Vector3, GameObject> bullets = new();
-    private Dictionary<Vector3, GameObject> enemies = new();
+    private List<GameObject> bullets = new List<GameObject>();
+    private List<GameObject> enemies = new List<GameObject>();
 
     public event OnMoveHandler OnMove;
     public event OnShootHandler OnShoot;
@@ -30,7 +29,7 @@ public class GameView : MonoBehaviour, IGameView
 
 
     void Start()
-    {        
+    {
         model = new GameModel();
         model.OnPositionChanged += UpdatePlayerPosition;
         model.BulletFired += SpawnBullet;
@@ -44,14 +43,13 @@ public class GameView : MonoBehaviour, IGameView
         controller = new GameController(this, model);
     }
 
-
     private void Update()
     {
         if (controller == null)
             return;
 
         controller.OnUpdate(Time.deltaTime);
-        
+
         float horizontal = Input.GetAxisRaw("Horizontal");
         if (horizontal != 0)
             OnMove?.Invoke(horizontal, Time.deltaTime);
@@ -111,86 +109,43 @@ public class GameView : MonoBehaviour, IGameView
         Vector3 vectorPos = CoordToVector(pos);
 
         var b = Instantiate(bulletPrefab, vectorPos, Quaternion.identity);
-        bullets[vectorPos] = b;
+        bullets.Add(b);
     }
 
-    public void MoveBullet(Coord newPos)
+    public void MoveBullet(List<Coord> newPos)
     {
-        Vector3 vectorPos = CoordToVector(newPos);
-
-        // encontra a entrada cujo key é a posição anterior mais próxima
-        foreach (var kv in new Dictionary<Vector3, GameObject>(bullets))
+        for (int i = 0; i < bullets.Count; i++)
         {
-            if (kv.Key.x == vectorPos.x && Mathf.Approximately(kv.Key.y + Time.deltaTime * GameModel.bulletSpeed, vectorPos.y))
-            {
-                var go = kv.Value;
-                bullets.Remove(kv.Key);
-                go.transform.position = vectorPos;
-                bullets[vectorPos] = go;
-                break;
-            }
+            Vector3 vectorPos = CoordToVector(newPos[i]);
+            bullets[i].transform.position = vectorPos;
         }
     }
 
-    public void DestroyBullet(Coord pos)
+    public void DestroyBullet(int bullet)
     {
-        Vector3 vectorPos = CoordToVector(pos);
+        Destroy(bullets[bullet]);
+        bullets.RemoveAt(bullet);
+    }
 
-        const float tol = 0.05f;               // tolerância p/ float
-        foreach (var kv in new Dictionary<Vector3, GameObject>(bullets))
+    public void SpawnEnemy(List<Coord> enemyPosition)
+    {
+        foreach (Coord enemy in enemyPosition)
         {
-            if (Vector3.Distance(kv.Key, vectorPos) < tol)
-            {
-                Destroy(kv.Value);             // mata o GO da bala
-                bullets.Remove(kv.Key);        // tira do dicionário
-                break;
-            }
+            Vector3 vectorPos = CoordToVector(enemy);
+            
+            var e = Instantiate(enemyPrefab, vectorPos, Quaternion.identity);
+            enemies.Add(e);
         }
     }
 
-    public void SpawnEnemy(Coord pos)
+    public void MoveEnemy(List<Coord> newPos)
     {
-        Vector3 vectorPos = new Vector3(pos.x, pos.y, pos.z);
 
-        var e = Instantiate(enemyPrefab, vectorPos, Quaternion.identity);
-        enemies[vectorPos] = e;
-    }
-
-    public void MoveEnemy(Coord newPos, bool moveRight)
-    {
-        Vector3 vectorPos = CoordToVector(newPos);
-
-        // Procura a instância cuja posição bate com o novo movimento,
-        // seja deslocamento horizontal normal ou “drop” vertical.
-        foreach (var kv in new Dictionary<Vector3, GameObject>(enemies))
+        for (int i = 0; i < enemies.Count; i++)
         {
-            Vector3 oldPos = kv.Key;
-            float horizontalStep = Time.deltaTime * GameModel.enemySpeed;
+            Vector3 vectorPos = CoordToVector(newPos[i]);
 
-            // 1) Movimento horizontal ─ X muda ±horizontalStep, Y mantém‑se
-            bool horizontalMatch =
-                Mathf.Approximately(oldPos.y, vectorPos.y) &&
-                (
-                    (moveRight && Mathf.Approximately(oldPos.x + horizontalStep, vectorPos.x)) ||
-                    (!moveRight && Mathf.Approximately(oldPos.x - horizontalStep, vectorPos.x))
-                );
-
-            // 2) Drop vertical ─ Y desce 1 unidade, X mantém‑se
-            bool verticalMatch =
-                Mathf.Approximately(oldPos.x, vectorPos.x) &&
-                Mathf.Approximately(oldPos.y - 1f, vectorPos.y);
-
-            if (horizontalMatch || verticalMatch)
-            {
-                GameObject go = kv.Value;
-                enemies.Remove(oldPos);      // remove chave antiga
-                go.transform.position = vectorPos;
-                enemies[vectorPos] = go;        // adiciona nova chave
-                break;
-            }
-
-            /*for(i; 0->nrenimigos)
-                enemies[i].transform.position = vectorPos*/
+            enemies[i].transform.position = vectorPos;
         }
     }
 
@@ -200,29 +155,13 @@ public class GameView : MonoBehaviour, IGameView
         Destroy(ex, .1f); // .1 para ser apenas um flash
     }
 
-
-    public void DestroyEnemy(Vector3 pos)
+    public void HandleEnemyKilled(int enemy)
     {
-        // pequena tolerância, para evitar falhas por arredondamento de floats
-        const float tol = 0.05f;
+        Vector3 vectorPos = enemies[enemy].transform.position;
 
-        // percorre uma cópia para evitar modificação durante iteração
-        foreach (var kv in new Dictionary<Vector3, GameObject>(enemies))
-        {
-            if (Vector3.Distance(kv.Key, pos) < tol)
-            {
-                Destroy(kv.Value);      // destrói o GameObject
-                enemies.Remove(kv.Key); // remove a entrada do dicionário
-                break;
-            }
-        }
-    }
-    public void HandleEnemyKilled(Coord pos)
-    {
-        Vector3 vectorPos = CoordToVector(pos);
-        
         ShowExplosion(vectorPos);
-        DestroyEnemy(vectorPos);
+        Destroy(enemies[enemy]);
+        enemies.RemoveAt(enemy);
     }
 
     public void UpdateScore(int score)
