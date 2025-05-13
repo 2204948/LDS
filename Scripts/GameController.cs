@@ -1,13 +1,7 @@
-using Unity.VisualScripting;
-using UnityEngine.InputSystem.XR;
-
 public class GameController
 {
     private IGameModel model;
     private GameView view;
-
-    private float lastShotTime = -1f;
-    private const float bulletCooldown = 0.5f;
 
     public GameController(GameView view, GameModel model)
     {
@@ -19,7 +13,7 @@ public class GameController
         view.OnGameOverStart += StartGame;
         view.OnGameOverQuit += ShowMenu;
         view.ShowMainMenu();
-        
+
     }
 
     public void OnPlayerInput(float direction, float deltaTime)
@@ -34,12 +28,6 @@ public class GameController
     }
 
     public void StartGame()
-    {
-        model.StartNewGame();
-        view.StartGame();
-    }
-
-    public void RestartGame()
     {
         model.StartNewGame();
         view.StartGame();
