@@ -10,6 +10,9 @@ public delegate void EnemyMovHandler(List<Coord> newEnemyPosition);
 public delegate void EnemyKilledHandler(int enemy);
 public delegate void ScoreChangedHandler(int newScore);
 public delegate void GameOverHandler();
+public delegate void EnemyBulletFiredHandler(Coord bulletPosition);
+public delegate void EnemyBulletMovedHandler(Coord bulletPosition);
+public delegate void EnemyBulletDestroyedHandler();
 
 public interface IGameModel
 {
@@ -23,6 +26,10 @@ public interface IGameModel
     event EnemyKilledHandler OnEnemyKilled;
     event ScoreChangedHandler OnScoreChanged;
     event GameOverHandler OnGameOver;
+    event EnemyBulletFiredHandler EnemyBulletFired;
+    event EnemyBulletMovedHandler EnemyBulletMoved;
+    event EnemyBulletDestroyedHandler EnemyBulletDestroyed;
+
 
     // Métodos públicos para interação com o modelo
     void StartNewGame();
