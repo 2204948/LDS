@@ -14,28 +14,45 @@ public class GameModel : IGameModel
     public event EnemyKilledHandler OnEnemyKilled;
     public event ScoreChangedHandler OnScoreChanged;
     public event GameOverHandler OnGameOver;
-
+    public event EnemyBulletFiredHandler EnemyBulletFired;
+    public event EnemyBulletMovedHandler EnemyBulletMoved;
+    public event EnemyBulletDestroyedHandler EnemyBulletDestroyed;
     // Estado do jogador
     private Coord playerPosition;
 
     // Estado de balas e inimigos
     private List<Coord> bullets = new List<Coord>();
     private List<Coord> enemies = new List<Coord>();
+    private Coord? enemyBullet;
 
     // Outras variáveis
     private const float playerMovSpeed = 8.0f;
-    public const float bulletSpeed = 10f;
-    public const float enemySpeed = 5f;
+    private const float bulletSpeed = 10f;
+    private float enemySpeed = 5f;
 
     private bool enemyMoveRight = true;
     private readonly float maxLeft = -14f;
     private readonly float maxRight = 14f;
     private readonly float MaxY = 18f;
+    private readonly float minY = -14f;
     private int score = 0;
 
     // Métodos
 
     public void StartNewGame()
+    {
+        bullets.Clear();
+        enemies.Clear();
+        score = 0;
+        enemyBullet = null;
+        playerPosition = new Coord(0f, -13.5f, 0f);
+        SpawnEnemies();
+
+        OnScoreChanged?.Invoke(score);
+        OnPositionChanged?.Invoke(playerPosition);
+    }
+
+    private void SpawnEnemies()
     {
         int rows = 3; //3
         int columns = 5; //5
@@ -43,11 +60,6 @@ public class GameModel : IGameModel
         float startY = 14f;
         float spacingX = 4f;
         float spacingY = 2f;
-
-        bullets.Clear();
-        enemies.Clear();
-        score = 0;
-        playerPosition = new Coord(0f, -13.5f, 0f);
 
         for (int row = 0; row < rows; row++)
         {
@@ -57,14 +69,11 @@ public class GameModel : IGameModel
                 float y = startY - (row * spacingY);
                 float z = 0;
                 Coord spawnPosition = new Coord(x, y, z);
-                
+
                 enemies.Add(spawnPosition);
-                //EnemySpawn(spawnPosition);
             }
         }
         OnEnemySpawn?.Invoke(enemies);
-        OnScoreChanged?.Invoke(score);
-        OnPositionChanged?.Invoke(playerPosition);
     }
 
     public void OnUpdate(float deltaTime) // update a cada frame
@@ -72,6 +81,11 @@ public class GameModel : IGameModel
         UpdateBulletPos(deltaTime);
         UpdateEnemiesPos(deltaTime);
         DetectColision();
+        UpdateEnemyBulletPos(deltaTime);
+        if (enemyBullet == null)
+            enemyShot();
+        DetectEnemyBulletColision();
+        DetectEnemyColision();
         //atualizar movimento das naves inimigas e dos tiros ativos
     }
 
@@ -80,6 +94,20 @@ public class GameModel : IGameModel
         float deltaX = direction * playerMovSpeed * deltaTime;
         playerPosition.x = Coord.Clamp(playerPosition.x + deltaX, maxLeft, maxRight);
         OnPositionChanged?.Invoke(playerPosition);
+    }
+
+    public void enemyShot()
+    {
+        if (enemies.Count > 0)
+        {
+            Random rnd = new Random();
+            int enemy = rnd.Next(0, enemies.Count);
+
+            Coord enemyPosition = new Coord(enemies[enemy].x, enemies[enemy].y, enemies[enemy].z);
+            Coord bulletPos = enemies[enemy] + new Coord(0, -1, 0);
+            enemyBullet = bulletPos;
+            EnemyBulletFired?.Invoke(bulletPos);
+        }
     }
 
     public void TryShot()
@@ -105,6 +133,25 @@ public class GameModel : IGameModel
         BulletMoved?.Invoke(bullets);
     }
 
+    private void UpdateEnemyBulletPos(float deltaTime)
+    {
+        if (enemyBullet.HasValue)
+        {
+            Coord bullet = enemyBullet.Value;
+            bullet += Coord.Down(bulletSpeed * deltaTime);
+            if (bullet.y < minY) // or same as enemy **
+            {
+                enemyBullet = null;
+                EnemyBulletDestroyed?.Invoke();
+            }
+            else
+            {
+                enemyBullet = bullet;
+                EnemyBulletMoved?.Invoke(bullet);
+            }   
+        }
+    }
+
     private void UpdateEnemiesPos(float deltaTime)
     {
         float moveStep = enemySpeed * deltaTime;
@@ -128,6 +175,7 @@ public class GameModel : IGameModel
             for (int i = 0; i < enemies.Count; i++)
             {
                 enemies[i] += Coord.Down();               // actualiza modelo
+                
             }
             EnemyMoved?.Invoke(enemies);
             return; // não mover horizontalmente neste frame
@@ -173,6 +221,43 @@ public class GameModel : IGameModel
         }
     }
 
+    private void DetectEnemyBulletColision()
+    {
+        if (enemyBullet.HasValue)
+        {
+            Coord bullet = enemyBullet.Value;
+            if (MathF.Abs(bullet.x - playerPosition.x) < 1.2f &&
+                    MathF.Abs(bullet.y - playerPosition.y) < 0.5f)
+            {
+                // Remove bala
+
+                enemyBullet = null;
+                EnemyBulletDestroyed?.Invoke();
+
+                // Regista hit no inimigo
+                bullets.Clear();
+                enemies.Clear();
+                OnGameOver?.Invoke();
+            }
+
+        }
+    }
+
+    private void DetectEnemyColision()
+    {
+        for (int e = enemies.Count - 1; e >= 0; e--)
+        {
+            Coord enemyPos = enemies[e];
+
+            if (MathF.Abs(enemyPos.x - playerPosition.x) < 1f &&
+                MathF.Abs(enemyPos.y - playerPosition.y) < 2f)
+            {
+                OnGameOver?.Invoke();
+                break;
+            }
+        }   
+    }
+
     private void EnemyHit(int index)
     {
         score += 10;
@@ -181,9 +266,10 @@ public class GameModel : IGameModel
         OnEnemyKilled?.Invoke(index);
 
 
-        if (GameOverCheck())
+        if (enemies.Count == 0)
         {
-            OnGameOver?.Invoke();
+            enemySpeed += 2f;
+            SpawnEnemies();
         }
     }
 
