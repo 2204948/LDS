@@ -20,6 +20,7 @@ public class GameView : MonoBehaviour, IGameView
     // Mapas de posições para instâncias
     private List<GameObject> bullets = new List<GameObject>();
     private List<GameObject> enemies = new List<GameObject>();
+    private GameObject enemyBullet;
 
     public event OnMoveHandler OnMove;
     public event OnShootHandler OnShoot;
@@ -38,8 +39,11 @@ public class GameView : MonoBehaviour, IGameView
         model.OnEnemySpawn += SpawnEnemy;
         model.EnemyMoved += MoveEnemy;
         model.OnEnemyKilled += HandleEnemyKilled;
-        model.OnGameOver += ShowGameOver;
+        model.OnGameOver += GameOver;
         model.OnScoreChanged += UpdateScore;
+        model.EnemyBulletFired += SpawEnemyBullet;
+        model.EnemyBulletMoved += MoveEnemyBullet;
+        model.EnemyBulletDestroyed += DestroyEnemyBullet;
         controller = new GameController(this, model);
     }
 
@@ -112,6 +116,14 @@ public class GameView : MonoBehaviour, IGameView
         bullets.Add(b);
     }
 
+    private void SpawEnemyBullet(Coord bulletPosition)
+    {
+        Vector3 vectorPos = CoordToVector(bulletPosition);
+
+        var b = Instantiate(enemyBulletPrefab, vectorPos, Quaternion.identity);
+        enemyBullet = b;
+    }
+
     public void MoveBullet(List<Coord> newPos)
     {
         for (int i = 0; i < bullets.Count; i++)
@@ -121,10 +133,20 @@ public class GameView : MonoBehaviour, IGameView
         }
     }
 
+    private void MoveEnemyBullet(Coord bulletPosition)
+    {
+        Vector3 vectorPos = CoordToVector(bulletPosition);
+        enemyBullet.transform.position = vectorPos;
+    }
     public void DestroyBullet(int bullet)
     {
         Destroy(bullets[bullet]);
         bullets.RemoveAt(bullet);
+    }
+
+    public void DestroyEnemyBullet()
+    {
+        Destroy(enemyBullet);
     }
 
     public void SpawnEnemy(List<Coord> enemyPosition)
@@ -170,26 +192,24 @@ public class GameView : MonoBehaviour, IGameView
             scoreText.text = $"Score: {score}";
     }
 
-    // Exemplo de feedback visual ao dano (opcional)
-    public void FlashPlayerDamage()
-    {
-        StartCoroutine(FlashRed());
-    }
-
-    private System.Collections.IEnumerator FlashRed()
-    {
-        var sr = player.GetComponent<SpriteRenderer>();
-        if (sr != null)
-        {
-            var orig = sr.color;
-            sr.color = Color.red;
-            yield return new WaitForSeconds(0.2f);
-            sr.color = orig;
-        }
-    }
-
     private Vector3 CoordToVector(Coord coord)
     {
         return new Vector3(coord.x, coord.y, coord.z);
+    }
+
+    private void GameOver()
+    {
+        foreach (GameObject bullet in bullets)
+        {
+            Destroy(bullet);
+        }
+        bullets.Clear();
+        foreach (GameObject enemy in enemies)
+        {
+            Destroy(enemy);
+        }
+        enemies.Clear();
+        Destroy(enemyBullet);
+        ShowGameOver();
     }
 }
