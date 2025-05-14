@@ -21,6 +21,11 @@ public struct Coord
         return new Coord(0f, -1f, 0f);
     }
 
+    public static Coord Down(float distance)
+    {
+        return new Coord(0f, -distance, 0f);
+    }
+
     public static Coord Right()
     {
         return new Coord(1f, 0f, 0f);
