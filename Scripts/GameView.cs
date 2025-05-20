@@ -6,6 +6,7 @@ public class GameView : MonoBehaviour, IGameView
 {
     private GameController controller;
     private GameModel model;
+    private bool game = false;
 
     // Referências definidas no Inspector
     [SerializeField] private GameObject player;
@@ -44,12 +45,14 @@ public class GameView : MonoBehaviour, IGameView
         model.EnemyBulletFired += SpawEnemyBullet;
         model.EnemyBulletMoved += MoveEnemyBullet;
         model.EnemyBulletDestroyed += DestroyEnemyBullet;
+        model.ClearPlayerBullets += ClearPlayerBullets;
+        //model.OnGame += 
         controller = new GameController(this, model);
     }
 
     private void Update()
     {
-        if (controller == null)
+        if (!game)
             return;
 
         controller.OnUpdate(Time.deltaTime);
@@ -74,6 +77,7 @@ public class GameView : MonoBehaviour, IGameView
         mainMenuPanel?.SetActive(false);
         gameOverPanel?.SetActive(false);
         player?.SetActive(true);
+        game = true;
     }
 
     public void ShowGameOver()
@@ -154,7 +158,7 @@ public class GameView : MonoBehaviour, IGameView
         foreach (Coord enemy in enemyPosition)
         {
             Vector3 vectorPos = CoordToVector(enemy);
-            
+
             var e = Instantiate(enemyPrefab, vectorPos, Quaternion.identity);
             enemies.Add(e);
         }
@@ -197,8 +201,18 @@ public class GameView : MonoBehaviour, IGameView
         return new Vector3(coord.x, coord.y, coord.z);
     }
 
+    private void ClearPlayerBullets()
+    {
+        foreach (GameObject bullet in bullets)
+        {
+            Destroy(bullet);
+        }
+        bullets.Clear();
+    }
+
     private void GameOver()
     {
+        game = false;
         foreach (GameObject bullet in bullets)
         {
             Destroy(bullet);
