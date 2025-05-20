@@ -13,6 +13,8 @@ public delegate void GameOverHandler();
 public delegate void EnemyBulletFiredHandler(Coord bulletPosition);
 public delegate void EnemyBulletMovedHandler(Coord bulletPosition);
 public delegate void EnemyBulletDestroyedHandler();
+public delegate void ClearPlayerBulletsHandler();
+
 
 public interface IGameModel
 {
@@ -29,6 +31,7 @@ public interface IGameModel
     event EnemyBulletFiredHandler EnemyBulletFired;
     event EnemyBulletMovedHandler EnemyBulletMoved;
     event EnemyBulletDestroyedHandler EnemyBulletDestroyed;
+    event ClearPlayerBulletsHandler ClearPlayerBullets;
 
 
     // Métodos públicos para interação com o modelo
