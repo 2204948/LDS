@@ -17,6 +17,8 @@ public class GameModel : IGameModel
     public event EnemyBulletFiredHandler EnemyBulletFired;
     public event EnemyBulletMovedHandler EnemyBulletMoved;
     public event EnemyBulletDestroyedHandler EnemyBulletDestroyed;
+    public event ClearPlayerBulletsHandler ClearPlayerBullets;
+    //public event OnGameHandler OnGame;
     // Estado do jogador
     private Coord playerPosition;
 
@@ -36,20 +38,23 @@ public class GameModel : IGameModel
     private readonly float MaxY = 18f;
     private readonly float minY = -14f;
     private int score = 0;
-
+    private bool game;
     // Métodos
 
     public void StartNewGame()
     {
         bullets.Clear();
         enemies.Clear();
+        enemySpeed = 5f;
         score = 0;
         enemyBullet = null;
         playerPosition = new Coord(0f, -13.5f, 0f);
         SpawnEnemies();
+        game = true;
 
         OnScoreChanged?.Invoke(score);
         OnPositionChanged?.Invoke(playerPosition);
+        //OnGame?.Invoke(true);
     }
 
     private void SpawnEnemies()
@@ -76,18 +81,21 @@ public class GameModel : IGameModel
         OnEnemySpawn?.Invoke(enemies);
     }
 
-    public void OnUpdate(float deltaTime) // update a cada frame
+  public void OnUpdate(float deltaTime) // update a cada frame
+{
+    if (game)
     {
         UpdateBulletPos(deltaTime);
         UpdateEnemiesPos(deltaTime);
         DetectColision();
         UpdateEnemyBulletPos(deltaTime);
-        if (enemyBullet == null)
+            if (enemyBullet == null)
             enemyShot();
         DetectEnemyBulletColision();
         DetectEnemyColision();
-        //atualizar movimento das naves inimigas e dos tiros ativos
     }
+    //atualizar movimento das naves inimigas e dos tiros ativos
+}
 
     public void Move(float direction, float deltaTime)
     {
@@ -148,7 +156,7 @@ public class GameModel : IGameModel
             {
                 enemyBullet = bullet;
                 EnemyBulletMoved?.Invoke(bullet);
-            }   
+            }
         }
     }
 
@@ -175,7 +183,7 @@ public class GameModel : IGameModel
             for (int i = 0; i < enemies.Count; i++)
             {
                 enemies[i] += Coord.Down();               // actualiza modelo
-                
+
             }
             EnemyMoved?.Invoke(enemies);
             return; // não mover horizontalmente neste frame
@@ -195,68 +203,69 @@ public class GameModel : IGameModel
     /// Considera hit se a distância em X e Y for < 0.5 unidades.
     /// </summary>
     private void DetectColision()
+ {
+     for (int b = 0; b < bullets.Count; b++)
+     {
+         Coord bulletPos = bullets[b];
+
+         for (int e = 0; e < enemies.Count; e++)
+         {
+             Coord enemyPos = enemies[e];
+
+             if (MathF.Abs(bulletPos.x - enemyPos.x) < 1f &&
+                 MathF.Abs(bulletPos.y - enemyPos.y) < 0.5f)
+             {
+                 // Remove bala
+
+                 bullets.RemoveAt(b);
+                 BulletDestroyed?.Invoke(b);
+
+                 // Regista hit no inimigo
+                 EnemyHit(e);
+
+                 break; // bala destruída, sai do loop interno
+             }
+         }
+     }
+ }
+
+   private void DetectEnemyBulletColision()
+{
+    if (enemyBullet.HasValue)
     {
-        for (int b = bullets.Count - 1; b >= 0; b--)
+        Coord bullet = enemyBullet.Value;
+        if (MathF.Abs(bullet.x - playerPosition.x) < 1.2f &&
+                MathF.Abs(bullet.y - playerPosition.y) < 0.5f)
         {
-            Coord bulletPos = bullets[b];
+            // Remove bala
+            game = false;
+            enemyBullet = null;
+            EnemyBulletDestroyed?.Invoke();
 
-            for (int e = enemies.Count - 1; e >= 0; e--)
-            {
-                Coord enemyPos = enemies[e];
-
-                if (MathF.Abs(bulletPos.x - enemyPos.x) < 1f &&
-                    MathF.Abs(bulletPos.y - enemyPos.y) < 0.5f)
-                {
-                    // Remove bala
-
-                    bullets.RemoveAt(b);
-                    BulletDestroyed?.Invoke(b);
-
-                    // Regista hit no inimigo
-                    EnemyHit(e);
-
-                    break; // bala destruída, sai do loop interno
-                }
-            }
+            // Regista hit no inimigo
+            bullets.Clear();
+            enemies.Clear();
+            OnGameOver?.Invoke();
         }
+
     }
-
-    private void DetectEnemyBulletColision()
-    {
-        if (enemyBullet.HasValue)
-        {
-            Coord bullet = enemyBullet.Value;
-            if (MathF.Abs(bullet.x - playerPosition.x) < 1.2f &&
-                    MathF.Abs(bullet.y - playerPosition.y) < 0.5f)
-            {
-                // Remove bala
-
-                enemyBullet = null;
-                EnemyBulletDestroyed?.Invoke();
-
-                // Regista hit no inimigo
-                bullets.Clear();
-                enemies.Clear();
-                OnGameOver?.Invoke();
-            }
-
-        }
-    }
+}
 
     private void DetectEnemyColision()
     {
-        for (int e = enemies.Count - 1; e >= 0; e--)
-        {
-            Coord enemyPos = enemies[e];
+    for (int e = enemies.Count - 1; e >= 0; e--)
+      {
+        Coord enemyPos = enemies[e];
 
-            if (MathF.Abs(enemyPos.x - playerPosition.x) < 1f &&
-                MathF.Abs(enemyPos.y - playerPosition.y) < 2f)
-            {
-                OnGameOver?.Invoke();
-                break;
-            }
-        }   
-    }
+        if (MathF.Abs(enemyPos.x - playerPosition.x) < 1f &&
+            MathF.Abs(enemyPos.y - playerPosition.y) < 2f)
+        {
+            game = false;
+            OnGameOver?.Invoke();
+            break;
+        }
+      }
+     }
 
     private void EnemyHit(int index)
     {
@@ -269,6 +278,8 @@ public class GameModel : IGameModel
         if (enemies.Count == 0)
         {
             enemySpeed += 2f;
+            bullets.Clear();
+            ClearPlayerBullets?.Invoke();
             SpawnEnemies();
         }
     }
@@ -287,6 +298,6 @@ public class GameModel : IGameModel
                 return true;
             }
         }
-        return false;
+           return false;
     }
 }
