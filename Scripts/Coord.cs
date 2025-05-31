@@ -1,3 +1,7 @@
+/// <summary>
+/// Estrutura que representa uma posição (x, y, z) no espaço 2D/3D do jogo.
+/// Utilizada como base para todas as posições do modelo.
+/// </summary>
 public struct Coord
 {
     public float x;
@@ -11,30 +15,39 @@ public struct Coord
         this.z = z;
     }
 
+    /// <summary>
+    /// Retorna um vetor na direção vertical positiva com distância dada.
+    /// </summary>
     public static Coord Up(float distance)
-    {
-        return new Coord(0f,distance, 0f);
-    }
+        => new Coord(0f, distance, 0f);
 
+    /// <summary>
+    /// Retorna um vetor unitário para baixo.
+    /// </summary>
     public static Coord Down()
-    {
-        return new Coord(0f, -1f, 0f);
-    }
+        => new Coord(0f, -1f, 0f);
 
+    /// <summary>
+    /// Retorna um vetor na direção vertical negativa com distância dada.
+    /// </summary>
     public static Coord Down(float distance)
-    {
-        return new Coord(0f, -distance, 0f);
-    }
+        => new Coord(0f, -distance, 0f);
 
+    /// <summary>
+    /// Retorna um vetor unitário para a direita.
+    /// </summary>
     public static Coord Right()
-    {
-        return new Coord(1f, 0f, 0f);
-    }
+        => new Coord(1f, 0f, 0f);
 
+    /// <summary>
+    /// Retorna um vetor unitário para a esquerda.
+    /// </summary>
     public static Coord Left()
-    {
-        return new Coord(-1f, 0f, 0f);
-    }
+        => new Coord(-1f, 0f, 0f);
+
+    /// <summary>
+    /// Limita um valor entre um mínimo e um máximo.
+    /// </summary>
     public static float Clamp(float value, float min, float max)
     {
         if (value < min) return min;
@@ -42,13 +55,15 @@ public struct Coord
         return value;
     }
 
+    /// <summary>
+    /// Soma dois vetores coordenados.
+    /// </summary>
     public static Coord operator +(Coord a, Coord b)
-    {
-        return new Coord(a.x + b.x, a.y + b.y, a.z + b.z);
-    }
+        => new Coord(a.x + b.x, a.y + b.y, a.z + b.z);
 
+    /// <summary>
+    /// Multiplica um vetor por um escalar.
+    /// </summary>
     public static Coord operator *(Coord a, float scalar)
-    {
-        return new Coord(a.x * scalar, a.y * scalar, a.z * scalar);
-    }
+        => new Coord(a.x * scalar, a.y * scalar, a.z * scalar);
 }
