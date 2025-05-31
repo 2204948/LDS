@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
 
-
+/// <summary>
+/// Modelo principal do jogo. Gere lógica interna do jogador, inimigos, tiros e colisões.
+/// Comunica com a View através de eventos.
+/// </summary>
 public class GameModel : IGameModel
 {
-    // Eventos
+    // === Eventos enviados para a View reagir visualmente ===
     public event PositionChangedHandler OnPositionChanged;
     public event BulletFiredHandler BulletFired;
     public event BulletMovedHandler BulletMoved;
@@ -18,29 +21,30 @@ public class GameModel : IGameModel
     public event EnemyBulletMovedHandler EnemyBulletMoved;
     public event EnemyBulletDestroyedHandler EnemyBulletDestroyed;
     public event ClearPlayerBulletsHandler ClearPlayerBullets;
-    //public event OnGameHandler OnGame;
-    // Estado do jogador
+
+    // === Estado do jogador ===
     private Coord playerPosition;
 
-    // Estado de balas e inimigos
-    private List<Coord> bullets = new List<Coord>();
-    private List<Coord> enemies = new List<Coord>();
-    private Coord? enemyBullet;
+    // === Estado do jogo ===
+    private List<Coord> bullets = new();       // Balas disparadas pelo jogador
+    private List<Coord> enemies = new();       // Inimigos vivos
+    private Coord? enemyBullet;                // Única bala inimiga ativa (pode ser null)
 
-    // Outras variáveis
-    private const float playerMovSpeed = 8.0f;
-    private const float bulletSpeed = 10f;
-    private float enemySpeed = 5f;
+    // === Constantes e limites do jogo ===
+    private const float playerMovSpeed = 8.0f; // Velocidade de movimento do jogador
+    private const float bulletSpeed = 10f;     // Velocidade das balas
+    private float enemySpeed = 5f;             // Velocidade dos inimigos (acelera com o tempo)
 
-    private bool enemyMoveRight = true;
-    private readonly float maxLeft = -14f;
-    private readonly float maxRight = 14f;
-    private readonly float MaxY = 18f;
-    private readonly float minY = -14f;
-    private int score = 0;
-    private bool game;
-    // Métodos
+    private readonly float maxLeft = -14f, maxRight = 14f;
+    private readonly float MaxY = 18f, minY = -14f;
 
+    private bool enemyMoveRight = true; // Direção atual dos inimigos
+    private int score = 0;              // Pontuação
+    private bool game;                  // Estado do jogo (ativo ou não)
+
+    /// <summary>
+    /// Começa um novo jogo: reinicia estado e gera inimigos.
+    /// </summary>
     public void StartNewGame()
     {
         bullets.Clear();
@@ -48,23 +52,24 @@ public class GameModel : IGameModel
         enemySpeed = 5f;
         score = 0;
         enemyBullet = null;
-        playerPosition = new Coord(0f, -13.5f, 0f);
-        SpawnEnemies();
+        playerPosition = new Coord(0f, -13.5f, 0f); // Jogador no centro, em baixo
         game = true;
 
+        SpawnEnemies(); // Cria inimigos iniciais
+
+        // Notifica a View
         OnScoreChanged?.Invoke(score);
         OnPositionChanged?.Invoke(playerPosition);
-        //OnGame?.Invoke(true);
     }
 
+    /// <summary>
+    /// Gera inimigos em formação, em várias linhas e colunas.
+    /// </summary>
     private void SpawnEnemies()
     {
-        int rows = 3; //3
-        int columns = 5; //5
-        float startX = -8f;
-        float startY = 14f;
-        float spacingX = 4f;
-        float spacingY = 2f;
+        int rows = 3, columns = 5;
+        float startX = -8f, startY = 14f;
+        float spacingX = 4f, spacingY = 2f;
 
         for (int row = 0; row < rows; row++)
         {
@@ -72,31 +77,36 @@ public class GameModel : IGameModel
             {
                 float x = startX + (col * spacingX);
                 float y = startY - (row * spacingY);
-                float z = 0;
-                Coord spawnPosition = new Coord(x, y, z);
-
-                enemies.Add(spawnPosition);
+                enemies.Add(new Coord(x, y, 0));
             }
         }
-        OnEnemySpawn?.Invoke(enemies);
+
+        OnEnemySpawn?.Invoke(enemies); // Notifica a View
     }
 
-  public void OnUpdate(float deltaTime) // update a cada frame
-{
-    if (game)
+    /// <summary>
+    /// Atualiza a lógica do jogo a cada frame.
+    /// Só executa se o jogo estiver ativo.
+    /// </summary>
+    public void OnUpdate(float deltaTime)
     {
+        if (!game) return;
+
         UpdateBulletPos(deltaTime);
         UpdateEnemiesPos(deltaTime);
         DetectColision();
         UpdateEnemyBulletPos(deltaTime);
-            if (enemyBullet == null)
+
+        if (enemyBullet == null)
             enemyShot();
+
         DetectEnemyBulletColision();
         DetectEnemyColision();
     }
-    //atualizar movimento das naves inimigas e dos tiros ativos
-}
 
+    /// <summary>
+    /// Move o jogador na horizontal, respeitando os limites.
+    /// </summary>
     public void Move(float direction, float deltaTime)
     {
         float deltaX = direction * playerMovSpeed * deltaTime;
@@ -104,177 +114,194 @@ public class GameModel : IGameModel
         OnPositionChanged?.Invoke(playerPosition);
     }
 
-    public void enemyShot()
-    {
-        if (enemies.Count > 0)
-        {
-            Random rnd = new Random();
-            int enemy = rnd.Next(0, enemies.Count);
-
-            Coord enemyPosition = new Coord(enemies[enemy].x, enemies[enemy].y, enemies[enemy].z);
-            Coord bulletPos = enemies[enemy] + new Coord(0, -1, 0);
-            enemyBullet = bulletPos;
-            EnemyBulletFired?.Invoke(bulletPos);
-        }
-    }
-
+    /// <summary>
+    /// Dispara uma bala a partir da posição atual do jogador.
+    /// </summary>
     public void TryShot()
     {
-        Coord playerPositionC = new Coord(playerPosition.x, playerPosition.y, playerPosition.z);
-        Coord bulletPos = playerPositionC + new Coord(0, 1, 0);
+        Coord bulletPos = playerPosition + new Coord(0, 1, 0);
         bullets.Add(bulletPos);
         BulletFired?.Invoke(bulletPos);
     }
 
+    /// <summary>
+    /// Inimigo aleatório dispara uma bala.
+    /// </summary>
+    public void enemyShot()
+    {
+        if (enemies.Count == 0)
+        {
+            Console.WriteLine("ERRO: Nenhum inimigo disponível para disparar.");
+            return;
+        }
+
+        int index = new Random().Next(enemies.Count);
+        Coord bulletPos = enemies[index] + new Coord(0, -1, 0);
+        enemyBullet = bulletPos;
+        EnemyBulletFired?.Invoke(bulletPos);
+    }
+
+    /// <summary>
+    /// Atualiza posições das balas do jogador e remove as que saem do ecrã.
+    /// </summary>
     private void UpdateBulletPos(float deltaTime)
     {
-        for (int i = bullets.Count - 1; i >= 0; i--)
+        int i = 0;
+        while (i < bullets.Count)
         {
             bullets[i] += Coord.Up(bulletSpeed * deltaTime);
 
-            if (bullets[i].y > MaxY) // or same as enemy **
+            if (bullets[i].y > MaxY)
             {
                 bullets.RemoveAt(i);
                 BulletDestroyed?.Invoke(i);
-            }
-        }
-        BulletMoved?.Invoke(bullets);
-    }
-
-    private void UpdateEnemyBulletPos(float deltaTime)
-    {
-        if (enemyBullet.HasValue)
-        {
-            Coord bullet = enemyBullet.Value;
-            bullet += Coord.Down(bulletSpeed * deltaTime);
-            if (bullet.y < minY) // or same as enemy **
-            {
-                enemyBullet = null;
-                EnemyBulletDestroyed?.Invoke();
+                // Não incrementa i, porque o próximo elemento deslizou para a posição i
             }
             else
             {
-                enemyBullet = bullet;
-                EnemyBulletMoved?.Invoke(bullet);
+                i++; // Só avança se não houve remoção
             }
+        }
+
+        BulletMoved?.Invoke(bullets);
+    }
+
+
+    /// <summary>
+    /// Atualiza posição da bala inimiga. Remove se sair do ecrã.
+    /// </summary>
+    private void UpdateEnemyBulletPos(float deltaTime)
+    {
+        if (!enemyBullet.HasValue) return;
+
+        Coord bullet = enemyBullet.Value + Coord.Down(bulletSpeed * deltaTime);
+        if (bullet.y < minY)
+        {
+            enemyBullet = null;
+            EnemyBulletDestroyed?.Invoke();
+        }
+        else
+        {
+            enemyBullet = bullet;
+            EnemyBulletMoved?.Invoke(bullet);
         }
     }
 
+    /// <summary>
+    /// Move os inimigos na horizontal e vertical se atingirem os limites.
+    /// </summary>
     private void UpdateEnemiesPos(float deltaTime)
     {
-        float moveStep = enemySpeed * deltaTime;
+        float step = enemySpeed * deltaTime;
         bool needDrop = false;
 
-        // 1) Detecta se ALGUM inimigo está na borda depois do próximo passo
-        for (int i = 0; i < enemies.Count; i++)
+        foreach (var enemy in enemies)
         {
-            float nextX = enemies[i].x + (enemyMoveRight ? moveStep : -moveStep);
-            if (nextX >= maxRight || nextX <= maxLeft)
+            float nextX = enemy.x + (enemyMoveRight ? step : -step);
+            if (nextX < maxLeft || nextX > maxRight)
             {
                 needDrop = true;
-                enemyMoveRight = !enemyMoveRight; // inverte só UMA vez
+                enemyMoveRight = !enemyMoveRight;
                 break;
             }
         }
 
-        // 2) Se vai cruzar, desce TODOS e avisa a View
         if (needDrop)
         {
             for (int i = 0; i < enemies.Count; i++)
-            {
-                enemies[i] += Coord.Down();               // actualiza modelo
-
-            }
+                enemies[i] += Coord.Down(); // Desce uma linha
             EnemyMoved?.Invoke(enemies);
-            return; // não mover horizontalmente neste frame
+            return;
         }
 
-        // 3) Caso contrário, move horizontalmente
-        Coord step = (enemyMoveRight ? Coord.Right() : Coord.Left()) * moveStep;
-
+        Coord direction = (enemyMoveRight ? Coord.Right() : Coord.Left()) * step;
         for (int i = 0; i < enemies.Count; i++)
-        {
-            enemies[i] += step;
-        }
+            enemies[i] += direction;
+
         EnemyMoved?.Invoke(enemies);
     }
+
     /// <summary>
-    /// Verifica colisões bala‑inimigo e actualiza listas / eventos.
-    /// Considera hit se a distância em X e Y for < 0.5 unidades.
+    /// Verifica se alguma bala do jogador colidiu com algum inimigo.
     /// </summary>
     private void DetectColision()
- {
-     for (int b = 0; b < bullets.Count; b++)
-     {
-         Coord bulletPos = bullets[b];
-
-         for (int e = 0; e < enemies.Count; e++)
-         {
-             Coord enemyPos = enemies[e];
-
-             if (MathF.Abs(bulletPos.x - enemyPos.x) < 1f &&
-                 MathF.Abs(bulletPos.y - enemyPos.y) < 0.5f)
-             {
-                 // Remove bala
-
-                 bullets.RemoveAt(b);
-                 BulletDestroyed?.Invoke(b);
-
-                 // Regista hit no inimigo
-                 EnemyHit(e);
-
-                 break; // bala destruída, sai do loop interno
-             }
-         }
-     }
- }
-
-   private void DetectEnemyBulletColision()
-{
-    if (enemyBullet.HasValue)
     {
+        for (int b = 0; b < bullets.Count; b++)
+        {
+            Coord bulletPos = bullets[b];
+
+            for (int e = 0; e < enemies.Count; e++)
+            {
+                Coord enemyPos = enemies[e];
+
+                if (MathF.Abs(bulletPos.x - enemyPos.x) < 1f &&
+                    MathF.Abs(bulletPos.y - enemyPos.y) < 0.5f)
+                {
+                    bullets.RemoveAt(b);
+                    BulletDestroyed?.Invoke(b);
+                    EnemyHit(e);
+                    return;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Verifica se a bala inimiga colidiu com o jogador.
+    /// </summary>
+    private void DetectEnemyBulletColision()
+    {
+        if (!enemyBullet.HasValue) return;
+
         Coord bullet = enemyBullet.Value;
         if (MathF.Abs(bullet.x - playerPosition.x) < 1.2f &&
-                MathF.Abs(bullet.y - playerPosition.y) < 0.5f)
+            MathF.Abs(bullet.y - playerPosition.y) < 0.5f)
         {
-            // Remove bala
-            game = false;
             enemyBullet = null;
+            game = false;
             EnemyBulletDestroyed?.Invoke();
 
-            // Regista hit no inimigo
             bullets.Clear();
             enemies.Clear();
             OnGameOver?.Invoke();
         }
-
     }
-}
 
+    /// <summary>
+    /// Verifica se algum inimigo colidiu diretamente com o jogador.
+    /// </summary>
     private void DetectEnemyColision()
     {
-    for (int e = enemies.Count - 1; e >= 0; e--)
-      {
-        Coord enemyPos = enemies[e];
-
-        if (MathF.Abs(enemyPos.x - playerPosition.x) < 1f &&
-            MathF.Abs(enemyPos.y - playerPosition.y) < 2f)
+        foreach (var enemy in enemies)
         {
-            game = false;
-            OnGameOver?.Invoke();
-            break;
+            if (MathF.Abs(enemy.x - playerPosition.x) < 1f &&
+                MathF.Abs(enemy.y - playerPosition.y) < 2f)
+            {
+                game = false;
+                OnGameOver?.Invoke();
+                break;
+            }
         }
-      }
-     }
+    }
 
+    /// <summary>
+    /// Lida com o acerto de um inimigo: remove-o e atualiza score.
+    /// </summary>
     private void EnemyHit(int index)
     {
+        if (index < 0 || index >= enemies.Count)
+        {
+            Console.WriteLine($"ERRO: EnemyHit: índice inválido {index} (tamanho da lista: {enemies.Count})");
+            return;
+        }
+
+
         score += 10;
         enemies.RemoveAt(index);
         OnScoreChanged?.Invoke(score);
         OnEnemyKilled?.Invoke(index);
 
-
+        // Quando todos os inimigos são mortos, próxima ronda
         if (enemies.Count == 0)
         {
             enemySpeed += 2f;
@@ -282,22 +309,5 @@ public class GameModel : IGameModel
             ClearPlayerBullets?.Invoke();
             SpawnEnemies();
         }
-    }
-
-    private bool GameOverCheck()
-    {
-        if (enemies.Count == 0)
-        {
-            return true;
-        }
-
-        foreach (var enemy in enemies)
-        {
-            if (enemy.y <= playerPosition.y)
-            {
-                return true;
-            }
-        }
-           return false;
     }
 }
