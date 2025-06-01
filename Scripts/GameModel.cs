@@ -1,10 +1,40 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 /// <summary>
 /// Modelo principal do jogo. Gere lógica interna do jogador, inimigos, tiros e colisões.
 /// Comunica com a View através de eventos.
 /// </summary>
+
+
+/// Delegados (tipos de função) para eventos emitidos pelo modelo.
+/// Permitem à View reagir a mudanças de estado.
+
+// Jogador
+public delegate void PositionChangedHandler(Coord newPosition);
+public delegate void ExitGameHandler();
+
+// Balas do jogador
+public delegate void BulletFiredHandler(Coord bulletPosition);
+public delegate void BulletMovedHandler(List<Coord> newBulletPositions);
+public delegate void BulletDestroyedHandler(int bulletIndex);
+public delegate void ClearPlayerBulletsHandler();
+
+// Inimigos
+public delegate void EnemySpawnHandler(List<Coord> enemyPositions);
+public delegate void EnemyMovHandler(List<Coord> newEnemyPositions);
+public delegate void EnemyKilledHandler(int enemyIndex);
+
+// Pontuação e estado do jogo
+public delegate void ScoreChangedHandler(int newScore);
+public delegate void GameOverHandler();
+
+// Balas dos inimigos
+public delegate void EnemyBulletFiredHandler(Coord bulletPosition);
+public delegate void EnemyBulletMovedHandler(Coord bulletPosition);
+public delegate void EnemyBulletDestroyedHandler();
+
 public class GameModel : IGameModel
 {
     // === Eventos enviados para a View reagir visualmente ===
@@ -21,6 +51,7 @@ public class GameModel : IGameModel
     public event EnemyBulletMovedHandler EnemyBulletMoved;
     public event EnemyBulletDestroyedHandler EnemyBulletDestroyed;
     public event ClearPlayerBulletsHandler ClearPlayerBullets;
+    public event ExitGameHandler OnExitGame;
 
     // === Estado do jogador ===
     private Coord playerPosition;
@@ -38,6 +69,9 @@ public class GameModel : IGameModel
     private readonly float maxLeft = -14f, maxRight = 14f;
     private readonly float MaxY = 18f, minY = -14f;
 
+    private float lastShotTime = -1f;
+    private const float bulletCooldown = 0.5f;
+
     private bool enemyMoveRight = true; // Direção atual dos inimigos
     private int score = 0;              // Pontuação
     private bool game;                  // Estado do jogo (ativo ou não)
@@ -45,7 +79,7 @@ public class GameModel : IGameModel
     /// <summary>
     /// Começa um novo jogo: reinicia estado e gera inimigos.
     /// </summary>
-    public void StartNewGame()
+    public virtual void StartNewGame()
     {
         bullets.Clear();
         enemies.Clear();
@@ -88,7 +122,7 @@ public class GameModel : IGameModel
     /// Atualiza a lógica do jogo a cada frame.
     /// Só executa se o jogo estiver ativo.
     /// </summary>
-    public void OnUpdate(float deltaTime)
+    public virtual void OnUpdate(float deltaTime)
     {
         if (!game) return;
 
@@ -107,7 +141,7 @@ public class GameModel : IGameModel
     /// <summary>
     /// Move o jogador na horizontal, respeitando os limites.
     /// </summary>
-    public void Move(float direction, float deltaTime)
+    public virtual void Move(float direction, float deltaTime)
     {
         float deltaX = direction * playerMovSpeed * deltaTime;
         playerPosition.x = Coord.Clamp(playerPosition.x + deltaX, maxLeft, maxRight);
@@ -117,11 +151,16 @@ public class GameModel : IGameModel
     /// <summary>
     /// Dispara uma bala a partir da posição atual do jogador.
     /// </summary>
-    public void TryShot()
+    public virtual void TryShot()
     {
-        Coord bulletPos = playerPosition + new Coord(0, 1, 0);
-        bullets.Add(bulletPos);
-        BulletFired?.Invoke(bulletPos);
+        float time = Time.time;
+        if (time - lastShotTime >= bulletCooldown)
+        {
+            lastShotTime = time;
+            Coord bulletPos = playerPosition + new Coord(0, 1, 0);
+            bullets.Add(bulletPos);
+            BulletFired?.Invoke(bulletPos);
+        }
     }
 
     /// <summary>
@@ -135,7 +174,7 @@ public class GameModel : IGameModel
             return;
         }
 
-        int index = new Random().Next(enemies.Count);
+        int index = new System.Random().Next(enemies.Count);
         Coord bulletPos = enemies[index] + new Coord(0, -1, 0);
         enemyBullet = bulletPos;
         EnemyBulletFired?.Invoke(bulletPos);
@@ -309,5 +348,11 @@ public class GameModel : IGameModel
             ClearPlayerBullets?.Invoke();
             SpawnEnemies();
         }
+    }
+
+    public void ExitGame()
+    {
+        //Possível lógica adicional para guardar dados do jogo.
+        OnExitGame?.Invoke();
     }
 }
