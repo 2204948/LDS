@@ -2,39 +2,36 @@ using System;
 using UnityEngine;
 
 /// <summary>
-/// Classe controladora. Interliga input da View com lógica do Modelo.
+/// Classe controladora. Interliga input da View com l�gica do Modelo.
 /// </summary>
 public class GameController
 {
-    private IGameModel model;
-    private GameView view;
+    private GameModel model;
+    private IGameView view;
 
-    private float lastShotTime = -1f;
-    private const float bulletCooldown = 0.5f;
 
     /// <summary>
     /// Construtor principal. Liga a View ao Modelo.
     /// </summary>
-    public GameController(GameView view, GameModel model)
+    public GameController(IGameView view, GameModel model)
     {
         this.view = view;
         this.model = model;
 
-        // Liga eventos da View aos métodos do controlador
+        // Liga eventos da View aos m�todos do controlador
         view.OnMove += OnPlayerInput;
         view.OnShoot += Shoot;
         view.OnMainMenuStart += StartGame;
+        view.OnMainMenuExit += ExitGame;
         view.OnGameOverStart += StartGame;
         view.OnGameOverQuit += ShowMenu;
-
-        // Mostra o menu inicial
-        view.ShowMainMenu();
+        view.OnUpdate += OnUpdate;
     }
 
     /// <summary>
     /// Move o jogador com base no input horizontal.
     /// </summary>
-    public void OnPlayerInput(float direction, float deltaTime)
+    private void OnPlayerInput(float direction, float deltaTime)
     {
         model.Move(direction, deltaTime);
     }
@@ -42,20 +39,15 @@ public class GameController
     /// <summary>
     /// Lida com pedido de disparo. Aplica cooldown entre tiros.
     /// </summary>
-    public void Shoot()
+    private void Shoot()
     {
-        float time = Time.time;
-        if (time - lastShotTime >= bulletCooldown)
-        {
-            lastShotTime = time;
-            model.TryShot();
-        }
+        model.TryShot();
     }
 
     /// <summary>
-    /// Começa um novo jogo.
+    /// Come�a um novo jogo.
     /// </summary>
-    public void StartGame()
+    private void StartGame()
     {
         model.StartNewGame();
         view.StartGame();
@@ -65,14 +57,19 @@ public class GameController
     /// <summary>
     /// Mostra o menu principal.
     /// </summary>
-    public void ShowMenu()
+    private void ShowMenu()
     {
         view.ShowMainMenu();
         Debug.Log("[Info] Menu principal exibido.");
     }
 
+    private void ExitGame()
+    {
+        model.ExitGame();
+    }
+    
     /// <summary>
-    /// Atualização chamada a cada frame.
+    /// Atualiza��o chamada a cada frame.
     /// </summary>
     public void OnUpdate(float deltaTime)
     {
