@@ -8,10 +8,12 @@ public delegate void OnShootHandler();
 public delegate void OnMainMenuStartHandler();
 public delegate void OnGameOverStartHandler();
 public delegate void OnGameOverQuitHandler();
+public delegate void OnMainMenuExitHandler();
+public delegate void UpdateHandler(float deltaTime);
 
 /// <summary>
-/// Interface da View (interface gráfica).
-/// Define os eventos e métodos que permitem comunicação com o controlador.
+/// Interface da View (interface gr�fica).
+/// Define os eventos e m�todos que permitem comunica��o com o controlador.
 /// </summary>
 public interface IGameView
 {
@@ -23,16 +25,20 @@ public interface IGameView
     /// <summary>Pedido de disparo (ex: tecla espaço).</summary>
     event OnShootHandler OnShoot;
 
-    /// <summary>Início do jogo a partir do menu principal.</summary>
+    /// <summary>In�cio do jogo a partir do menu principal.</summary>
     event OnMainMenuStartHandler OnMainMenuStart;
 
-    /// <summary>Recomeçar o jogo após Game Over.</summary>
+    event OnMainMenuExitHandler OnMainMenuExit;
+
+    /// <summary>Recome�ar o jogo ap�s Game Over.</summary>
     event OnGameOverStartHandler OnGameOverStart;
 
-    /// <summary>Voltar ao menu após Game Over.</summary>
+    /// <summary>Voltar ao menu ap�s Game Over.</summary>
     event OnGameOverQuitHandler OnGameOverQuit;
 
-    // === Métodos visuais (feedback para o jogador) ===
+    event UpdateHandler OnUpdate;
+
+    // === M�todos visuais (feedback para o jogador) ===
 
     /// <summary>Mostra o menu principal.</summary>
     void ShowMainMenu();
@@ -43,9 +49,9 @@ public interface IGameView
     /// <summary>Mostra o painel de Game Over.</summary>
     void ShowGameOver();
 
-    /// <summary>Atualiza o score apresentado no ecrã.</summary>
+    /// <summary>Atualiza o score apresentado no ecr�.</summary>
     void UpdateScore(int score);
 
-    /// <summary>Lida com a morte de um inimigo (ex: explosão).</summary>
+    /// <summary>Lida com a morte de um inimigo (ex: explos�o).</summary>
     void HandleEnemyKilled(int enemy);
 }
