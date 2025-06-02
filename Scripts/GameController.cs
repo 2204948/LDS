@@ -1,6 +1,3 @@
-using System;
-using UnityEngine;
-
 /// <summary>
 /// Classe controladora. Interliga input da View com l�gica do Modelo.
 /// </summary>
