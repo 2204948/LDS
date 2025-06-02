@@ -20,6 +20,7 @@ public class GameView : MonoBehaviour, IGameView
     [SerializeField] private GameObject mainMenuPanel;
     [SerializeField] private GameObject gameOverPanel;
     [SerializeField] private TMPro.TextMeshProUGUI scoreText;
+    [SerializeField] private TMPro.TextMeshProUGUI errorLog;
 
     // === Estado atual de objetos visuais ===
     private List<GameObject> bullets = new();
@@ -57,6 +58,7 @@ public class GameView : MonoBehaviour, IGameView
         model.EnemyBulletDestroyed += DestroyEnemyBullet;
         model.ClearPlayerBullets += ClearPlayerBullets;
         model.OnExitGame += ExitGame;
+        model.OnError += DisplayError;
 
         // Cria o controlador, ligando View ao Modelo
         controller = new GameController(this, model);
@@ -103,6 +105,10 @@ public class GameView : MonoBehaviour, IGameView
     /// </summary>
     public void StartGame()
     {
+        // Oculta a mensagem de erro, se estiver visível
+        if (errorLog != null)
+            errorLog.gameObject.SetActive(false);
+
         mainMenuPanel?.SetActive(false);
         gameOverPanel?.SetActive(false);
         player?.SetActive(true);
@@ -175,12 +181,6 @@ public class GameView : MonoBehaviour, IGameView
     /// </summary>
     private void MoveBullet(List<Coord> newPos)
     {
-        if (bullets.Count != newPos.Count)
-        {
-            Debug.LogWarning($"Lista de balas não corresponde às posições recebidas.");
-            return;
-        }
-
         for (int i = 0; i < bullets.Count; i++)
         {
             Vector3 vectorPos = CoordToVector(newPos[i]);
@@ -193,12 +193,6 @@ public class GameView : MonoBehaviour, IGameView
     /// </summary>
     private void DestroyBullet(int bullet)
     {
-        if (bullet < 0 || bullet >= bullets.Count)
-        {
-            Debug.LogWarning($"ERRO: Índice inválido ao destruir bala.");
-            return;
-        }
-
         Destroy(bullets[bullet]);
         bullets.RemoveAt(bullet);
     }
@@ -219,15 +213,8 @@ public class GameView : MonoBehaviour, IGameView
     /// </summary>
     private void MoveEnemyBullet(Coord bulletPosition)
     {
-        if (enemyBullet != null)
-        {
-            Vector3 vectorPos = CoordToVector(bulletPosition);
-            enemyBullet.transform.position = vectorPos;
-        }
-        else
-        {
-            Debug.LogWarning("ERRO: Tentativa de mover bala inimiga inexistente.");
-        }
+        Vector3 vectorPos = CoordToVector(bulletPosition);
+        enemyBullet.transform.position = vectorPos;
     }
 
     /// <summary>
@@ -262,12 +249,6 @@ public class GameView : MonoBehaviour, IGameView
     /// </summary>
     private void MoveEnemy(List<Coord> newPos)
     {
-        if (enemies.Count != newPos.Count)
-        {
-            Debug.LogWarning($"Lista de inimigos não corresponde às posições recebidas.");
-            return;
-        }
-
         for (int i = 0; i < enemies.Count; i++)
         {
             Vector3 vectorPos = CoordToVector(newPos[i]);
@@ -291,12 +272,6 @@ public class GameView : MonoBehaviour, IGameView
     /// </summary>
     public void HandleEnemyKilled(int enemy)
     {
-        if (enemy < 0 || enemy >= enemies.Count)
-        {
-            Debug.LogWarning($"ERRO: Tentativa de eliminar inimigo com índice inválido.");
-            return;
-        }
-
         Vector3 vectorPos = enemies[enemy].transform.position;
 
         ShowExplosion(vectorPos);
@@ -310,10 +285,7 @@ public class GameView : MonoBehaviour, IGameView
     /// </summary>
     public void UpdateScore(int score)
     {
-        if (scoreText != null)
-            scoreText.text = $"Score: {score}";
-        else
-            Debug.LogWarning("ScoreText está nulo.");
+        scoreText.text = $"Score: {score}";
     }
 
     /// <summary>
@@ -332,6 +304,35 @@ public class GameView : MonoBehaviour, IGameView
     /// </summary>
     private void GameOver()
     {
+        ClearGame();
+        ShowGameOver();
+    }
+
+    private void ExitGame()
+    {
+        Application.Quit();
+    }
+
+    /// <summary>
+    /// Mostra uma mensagem de erro e volta ao menu principal.
+    /// Usado quando o modelo deteta um erro crítico.
+    /// </summary>
+    public void DisplayError(string message)
+    {
+        if (errorLog != null)
+        {
+            errorLog.text = message;
+            errorLog.gameObject.SetActive(true);
+        }
+        ClearGame();
+        ShowMainMenu();
+    }
+
+    /// <summary>
+    /// Limpa todos os objetos visuais
+    /// </summary>
+    private void ClearGame()
+    {
         game = false;
 
         foreach (GameObject bullet in bullets)
@@ -347,13 +348,6 @@ public class GameView : MonoBehaviour, IGameView
             Destroy(enemyBullet);
             enemyBullet = null;
         }
-
-        ShowGameOver();
-    }
-
-    private void ExitGame()
-    {
-        Application.Quit();
     }
 
     /// <summary>
