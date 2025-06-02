@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 
 /// <summary>
 /// Modelo principal do jogo. Gere lógica interna do jogador, inimigos, tiros e colisões.
@@ -38,7 +37,7 @@ public delegate void EnemyBulletDestroyedHandler();
 // Erros
 public delegate void ErrorHandler(string message);
 
-public class GameModel : IGameModel
+public class GameModel
 {
     // === Eventos enviados para a View reagir visualmente ===
     public event PositionChangedHandler OnPositionChanged;
@@ -75,12 +74,13 @@ public class GameModel : IGameModel
     private readonly float maxLeft = -14f, maxRight = 14f;
     private readonly float MaxY = 18f, minY = -14f;
 
-    private float lastShotTime = -1f;
+    private float lastShotTime = 0.5f;
     private const float bulletCooldown = 0.5f;
 
     private bool enemyMoveRight = true; // Direção atual dos inimigos
     private int score = 0;              // Pontuação
     private bool game;                  // Estado do jogo (ativo ou não)
+
 
     /// <summary>
     /// Começa um novo jogo: reinicia estado e gera inimigos.
@@ -136,8 +136,10 @@ public class GameModel : IGameModel
     /// </summary>
     public virtual void OnUpdate(float deltaTime)
     {
-        if (!game) return;
+        if (!game) 
+            return;
 
+        lastShotTime += deltaTime;
         UpdateBulletPos(deltaTime);
         UpdateEnemiesPos(deltaTime);
         DetectColision();
@@ -165,10 +167,9 @@ public class GameModel : IGameModel
     /// </summary>
     public virtual void TryShot()
     {
-        float time = Time.time;
-        if (time - lastShotTime >= bulletCooldown)
+        if (lastShotTime >= bulletCooldown)
         {
-            lastShotTime = time;
+            lastShotTime = 0f;
             Coord bulletPos = playerPosition + new Coord(0, 1, 0);
             bullets.Add(bulletPos);
             BulletFired?.Invoke(bulletPos);
@@ -261,7 +262,6 @@ public class GameModel : IGameModel
         Coord direction = (enemyMoveRight ? Coord.Right() : Coord.Left()) * step;
         for (int i = 0; i < enemies.Count; i++)
             enemies[i] += direction;
-
         EnemyMoved?.Invoke(enemies);
     }
 
@@ -295,6 +295,7 @@ public class GameModel : IGameModel
     /// </summary>
     private void DetectEnemyBulletColision()
     {
+       
         if (!enemyBullet.HasValue) return;
 
         Coord bullet = enemyBullet.Value;
