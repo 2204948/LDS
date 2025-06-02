@@ -77,7 +77,8 @@ public class GameView : MonoBehaviour, IGameView
         if (!game)
             return; // Se o jogo não está ativo, não reage ao input
 
-        OnUpdate?.Invoke(Time.deltaTime); // Atualiza o modelo com o tempo atual
+        controller.OnUpdate(Time.deltaTime);
+        //OnUpdate?.Invoke(Time.deltaTime); // Atualiza o modelo com o tempo atual
 
         float horizontal = Input.GetAxisRaw("Horizontal");
         if (horizontal != 0)
