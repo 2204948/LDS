@@ -35,6 +35,9 @@ public delegate void EnemyBulletFiredHandler(Coord bulletPosition);
 public delegate void EnemyBulletMovedHandler(Coord bulletPosition);
 public delegate void EnemyBulletDestroyedHandler();
 
+// Erros
+public delegate void ErrorHandler(string message);
+
 public class GameModel : IGameModel
 {
     // === Eventos enviados para a View reagir visualmente ===
@@ -52,6 +55,9 @@ public class GameModel : IGameModel
     public event EnemyBulletDestroyedHandler EnemyBulletDestroyed;
     public event ClearPlayerBulletsHandler ClearPlayerBullets;
     public event ExitGameHandler OnExitGame;
+
+    // Erros críticos
+    public event ErrorHandler OnError;
 
     // === Estado do jogador ===
     private Coord playerPosition;
@@ -89,9 +95,8 @@ public class GameModel : IGameModel
         playerPosition = new Coord(0f, -13.5f, 0f); // Jogador no centro, em baixo
         game = true;
 
-        SpawnEnemies(); // Cria inimigos iniciais
+        SpawnEnemies(); // Pode lançar erro
 
-        // Notifica a View
         OnScoreChanged?.Invoke(score);
         OnPositionChanged?.Invoke(playerPosition);
     }
@@ -101,21 +106,28 @@ public class GameModel : IGameModel
     /// </summary>
     private void SpawnEnemies()
     {
-        int rows = 3, columns = 5;
-        float startX = -8f, startY = 14f;
-        float spacingX = 4f, spacingY = 2f;
-
-        for (int row = 0; row < rows; row++)
+        try
         {
-            for (int col = 0; col < columns; col++)
-            {
-                float x = startX + (col * spacingX);
-                float y = startY - (row * spacingY);
-                enemies.Add(new Coord(x, y, 0));
-            }
-        }
+            int rows = 3, columns = 5;
+            float startX = -8f, startY = 14f;
+            float spacingX = 4f, spacingY = 2f;
 
-        OnEnemySpawn?.Invoke(enemies); // Notifica a View
+            for (int row = 0; row < rows; row++)
+            {
+                for (int col = 0; col < columns; col++)
+                {
+                    float x = startX + (col * spacingX);
+                    float y = startY - (row * spacingY);
+                    enemies.Add(new Coord(x, y, 0));
+                }
+            }
+
+            OnEnemySpawn?.Invoke(enemies);
+        }
+        catch (Exception)
+        {
+            OnError?.Invoke("Erro ao criar inimigos");
+        }
     }
 
     /// <summary>
@@ -168,12 +180,6 @@ public class GameModel : IGameModel
     /// </summary>
     public void enemyShot()
     {
-        if (enemies.Count == 0)
-        {
-            Console.WriteLine("ERRO: Nenhum inimigo disponível para disparar.");
-            return;
-        }
-
         int index = new System.Random().Next(enemies.Count);
         Coord bulletPos = enemies[index] + new Coord(0, -1, 0);
         enemyBullet = bulletPos;
@@ -201,7 +207,6 @@ public class GameModel : IGameModel
                 i++; // Só avança se não houve remoção
             }
         }
-
         BulletMoved?.Invoke(bullets);
     }
 
@@ -328,13 +333,6 @@ public class GameModel : IGameModel
     /// </summary>
     private void EnemyHit(int index)
     {
-        if (index < 0 || index >= enemies.Count)
-        {
-            Console.WriteLine($"ERRO: EnemyHit: índice inválido {index} (tamanho da lista: {enemies.Count})");
-            return;
-        }
-
-
         score += 10;
         enemies.RemoveAt(index);
         OnScoreChanged?.Invoke(score);
