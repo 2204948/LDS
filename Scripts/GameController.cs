@@ -49,9 +49,8 @@ public class GameController
     /// </summary>
     private void StartGame()
     {
-        model.StartNewGame();
         view.StartGame();
-        Debug.Log("[Info] Jogo iniciado.");
+        model.StartNewGame();
     }
 
     /// <summary>
@@ -60,7 +59,6 @@ public class GameController
     private void ShowMenu()
     {
         view.ShowMainMenu();
-        Debug.Log("[Info] Menu principal exibido.");
     }
 
     private void ExitGame()
