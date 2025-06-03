@@ -1,0 +1,13 @@
+{
+  "name": "PlayModeTests",
+  "references": [
+    "UnityEngine.TestRunner",
+    "nunit.framework",
+    "GameRuntime",
+    "Unity.TextMeshPro"
+  ],
+  "optionalUnityReferences": [],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false
+}
