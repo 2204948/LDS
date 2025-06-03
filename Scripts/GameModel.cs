@@ -313,14 +313,15 @@ public class GameModel
     }
 
     /// <summary>
-    /// Verifica se algum inimigo colidiu diretamente com o jogador.
+    /// Verifica se algum inimigo colidiu diretamente com o jogador ou com o fim do ecran.
     /// </summary>
     private void DetectEnemyColision()
     {
         foreach (var enemy in enemies)
         {
             if (MathF.Abs(enemy.x - playerPosition.x) < 1f &&
-                MathF.Abs(enemy.y - playerPosition.y) < 2f)
+                MathF.Abs(enemy.y - playerPosition.y) < 2f ||
+                enemy.y <= -14f) 
             {
                 game = false;
                 OnGameOver?.Invoke();
