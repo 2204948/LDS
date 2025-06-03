@@ -1,9 +1,0 @@
-{
-  "name": "GameRuntime",
-  "references": [
-    "Unity.TextMeshPro"
-  ],
-  "includePlatforms": [],
-  "excludePlatforms": [],
-  "allowUnsafeCode": false
-}
